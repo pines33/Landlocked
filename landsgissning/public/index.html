@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14171c" media="(prefers-color-scheme: dark)">
+  <title>Landsgissning</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Noto Color Emoji ger flaggor även på Windows, där systemets emoji saknar flaggor -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/vendor/jsvectormap/jsvectormap.min.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="logo"><span class="flag" aria-hidden="true">🌍</span> Landsgissning</h1>
+    <div class="topbar-right">
+      <button id="roomChip" class="chip" hidden title="Kopiera delningslänk"></button>
+      <span id="conn" class="conn" title="Anslutning"></span>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <!-- START -->
+  <main id="screen-start" class="screen narrow" hidden>
+    <section class="card">
+      <h2>Spela mot en vän</h2>
+      <p class="muted">Ni väljer varsitt hemligt land och turas om att ställa ja/nej-frågor. Den som först gissar rätt vinner.</p>
+      <label class="field">
+        <span>Ditt namn</span>
+        <input id="nameInput" maxlength="20" autocomplete="nickname" placeholder="t.ex. Leo">
+      </label>
+      <button id="createBtn" class="btn primary block">Skapa rum</button>
+      <div class="divider"><span>eller gå med</span></div>
+      <form id="joinForm" class="join-row">
+        <input id="codeInput" maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false"
+               placeholder="KOD" aria-label="Rumskod" inputmode="text">
+        <button class="btn" type="submit">Gå med</button>
+      </form>
+      <p id="startError" class="error" role="alert"></p>
+    </section>
+  </main>
+
+  <!-- LOBBY -->
+  <main id="screen-lobby" class="screen narrow" hidden>
+    <section class="card center">
+      <p class="muted">Rumskod</p>
+      <div id="lobbyCode" class="bigcode"></div>
+      <p class="muted">Be din vän öppna länken eller skriva in koden.</p>
+      <div class="share-row">
+        <input id="shareLink" readonly aria-label="Delningslänk">
+        <button id="copyBtn" class="btn">Kopiera</button>
+      </div>
+      <button id="shareBtn" class="btn primary block" hidden>Dela länk…</button>
+      <p class="waiting"><span class="dots"></span> Väntar på motspelare</p>
+      <button class="btn ghost leaveBtn">Lämna rummet</button>
+    </section>
+  </main>
+
+  <!-- SPELPLAN -->
+  <main id="screen-board" class="screen board" hidden>
+    <section class="board-main">
+      <div class="statusbar">
+        <div>
+          <div id="statusText" class="status-text"></div>
+          <div id="statusSub" class="muted small"></div>
+        </div>
+        <div id="myCountry" class="mine-chip" hidden></div>
+      </div>
+
+      <div id="controls" class="controls" hidden>
+        <div class="seg" role="tablist" aria-label="Läge">
+          <button id="modeMark" class="seg-btn" role="tab">✕ Markera</button>
+          <button id="modeGuess" class="seg-btn" role="tab">🎯 Gissa</button>
+        </div>
+        <button id="endTurnBtn" class="btn primary">Klar med tur</button>
+        <button id="showResultBtn" class="btn primary">Visa resultat</button>
+      </div>
+
+      <div class="map-wrap">
+        <div id="map"></div>
+        <button id="resetZoom" class="map-btn" title="Återställ zoom">⤢</button>
+      </div>
+      <p class="muted small hint" id="hint"></p>
+    </section>
+
+    <aside class="board-side">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="flags" role="tab">Flaggor</button>
+        <button class="tab" data-tab="chat" role="tab">Chatt <span id="unread" class="badge" hidden></span></button>
+      </div>
+
+      <section id="pane-flags" class="pane active">
+        <div class="flags-tools">
+          <input id="search" type="search" placeholder="Sök land…" autocomplete="off" aria-label="Sök land">
+          <label class="toggle"><input id="hideMarked" type="checkbox"> Dölj markerade</label>
+        </div>
+        <div id="flagCount" class="muted small"></div>
+        <div id="flags" class="flags"></div>
+      </section>
+
+      <section id="pane-chat" class="pane">
+        <div id="chatLog" class="chat-log" aria-live="polite"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" maxlength="300" autocomplete="off" placeholder="Ställ en fråga…" aria-label="Chattmeddelande">
+          <button class="btn primary" type="submit">Skicka</button>
+        </form>
+      </section>
+    </aside>
+  </main>
+
+  <!-- Bekräftelse (val/gissning) -->
+  <div id="actionbar" class="actionbar" hidden>
+    <div id="actionText" class="action-text"></div>
+    <div class="action-btns">
+      <button id="actionCancel" class="btn ghost">Avbryt</button>
+      <button id="actionOk" class="btn primary"></button>
+    </div>
+  </div>
+
+  <!-- Resultat -->
+  <dialog id="resultDlg" class="result">
+    <div id="resultEmoji" class="result-emoji"></div>
+    <h2 id="resultTitle"></h2>
+    <div id="resultReveal" class="reveal"></div>
+    <p id="resultSub" class="muted small"></p>
+    <div class="result-btns">
+      <button id="rematchBtn" class="btn primary">Spela igen</button>
+      <button id="closeResult" class="btn ghost">Visa kartan</button>
+    </div>
+    <button class="btn ghost small leaveBtn">Lämna rummet</button>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="/vendor/jsvectormap/jsvectormap.min.js"></script>
+  <script src="/vendor/jsvectormap/maps/world.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
